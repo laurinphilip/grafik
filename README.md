@@ -6,7 +6,9 @@ Die Website benötigt weder Installation noch Build-Schritt, Datenbank, Konto od
 
 ## Enthaltene Funktionen
 
-- Stammbaum mit Personen, Lebensdaten, Titeln, Notizen und optionalen Bildern
+- Stammbaum mit Personen, Lebensdaten, optionalen Bildern und mehreren Titeln samt Amtszeiten
+- automatisch erzeugte, farbcodierte Titellegende ohne doppelte Einträge
+- familienweise Anordnung mit zusammenhängenden Geschwistergruppen und klaren Eltern-Kind-Verbindungen
 - frei wählbare Farbe für Karten und Verbindungslinien, separat je Projekt
 - Eltern-Kind-Verbindungen und Partnerschaften mit automatischer Anordnung und Schutz vor Kreisen
 - Zeitleiste mit Ereignissen, Zeiträumen, Kategorien, Notizen und Bildern

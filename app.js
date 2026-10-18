@@ -6,8 +6,13 @@
   var SVG_NS = "http://www.w3.org/2000/svg";
   var XLINK_NS = "http://www.w3.org/1999/xlink";
   var DEFAULT_ACCENT = "#F2BC52";
-  var TREE_CARD = { width: 190, height: 104, gapX: 56, gapY: 76 };
+  var TREE_CARD = { width: 176, baseHeight: 58, titleHeight: 22, gapX: 28, familyGapX: 86, gapY: 92 };
   var TIMELINE_CARD = { width: 226, height: 118, gapX: 62 };
+  var TITLE_COLORS = [
+    "#0B63CE", "#4E9E13", "#8D2A22", "#B45B24", "#6B35D5", "#007A45",
+    "#D00069", "#735B83", "#0098C7", "#E07600", "#304A9A", "#8B7200",
+    "#A53F73", "#167A78", "#6E7F16", "#B23A2B"
+  ];
   var COLORS = {
     ivory: "#EEE8D8",
     gold: "#F2BC52",
@@ -29,6 +34,7 @@
     history: [],
     editingId: null,
     editingImage: "",
+    editingTitles: [],
     projectDialogMode: "new",
     lastBounds: { x: -400, y: -80, width: 800, height: 600 },
     pointer: null,
@@ -75,7 +81,7 @@
       "canvasShell", "editorCanvas", "canvasBackground", "viewportGroup", "canvasDefs",
       "canvasEmpty", "emptyTitle", "emptyText", "emptyActionButton", "canvasTip",
       "dismissTip", "personDialog", "personForm", "personDialogTitle", "personName",
-      "personTitleField", "personBirth", "personDeath", "personNotes",
+      "personBirth", "personDeath", "personNotes", "personTitlesList", "addTitleButton", "titleSuggestions",
       "personImageDropzone", "personImagePreview", "personImagePlaceholder",
       "personImageInput", "removePersonImageButton", "eventDialog", "eventForm",
       "eventDialogTitle", "eventTitle", "eventCategory", "eventStart", "eventEnd",
@@ -138,6 +144,14 @@
     });
 
     els.personForm.addEventListener("submit", savePerson);
+    els.addTitleButton.addEventListener("click", function () { addPersonTitleRow(); });
+    els.personTitlesList.addEventListener("click", function (event) {
+      var removeButton = event.target.closest("[data-remove-title]");
+      if (!removeButton) return;
+      var row = removeButton.closest(".title-entry-row");
+      if (row) row.remove();
+      if (!els.personTitlesList.children.length) addPersonTitleRow();
+    });
     els.eventForm.addEventListener("submit", saveEvent);
     els.relationForm.addEventListener("submit", saveRelation);
     els.projectForm.addEventListener("submit", saveProjectDialog);
@@ -215,15 +229,15 @@
       updatedAt: new Date().toISOString(),
       tree: {
         people: [
-          { id: "p-albrecht", name: "Albrecht I.", title: "Gründer des Hauses", birth: "1084", death: "1142", notes: "Begründete den Stammsitz auf dem Falkenberg.", image: "" },
-          { id: "p-elisabeth", name: "Elisabeth", title: "von Hohenried", birth: "1092", death: "1158", notes: "Förderin des Klosters St. Aurelia.", image: "" },
-          { id: "p-otto", name: "Otto I.", title: "Graf von Falkenstein", birth: "1118", death: "1181", notes: "Erweiterte den Familienbesitz nach Süden.", image: "" },
-          { id: "p-mathilde", name: "Mathilde", title: "Äbtissin von Aurelia", birth: "1122", death: "1190", notes: "Gelehrte und Chronistin ihrer Zeit.", image: "" },
-          { id: "p-konrad", name: "Konrad II.", title: "Herr zu Falkenberg", birth: "1148", death: "1211", notes: "Erhielt 1187 das Marktrecht.", image: "" },
-          { id: "p-agnes", name: "Agnes", title: "von Silberhain", birth: "1156", death: "1224", notes: "Stiftete das Hospital am unteren Tor.", image: "" },
-          { id: "p-ludwig", name: "Ludwig", title: "Ritter", birth: "1180", death: "1237", notes: "Nahm am Hofe des Kaisers diplomatische Aufgaben wahr.", image: "" },
-          { id: "p-sophia", name: "Sophia", title: "von Falkenstein", birth: "1184", death: "1251", notes: "Verwaltete die Grafschaft während zweier Regentschaften.", image: "" },
-          { id: "p-heinrich", name: "Heinrich III.", title: "Graf von Falkenstein", birth: "1210", death: "1274", notes: "Ließ die obere Burganlage erneuern.", image: "" }
+          { id: "p-albrecht", name: "Albrecht I.", titles: [{ id: "pt1", name: "Herr von Falkenstein", start: "1110", end: "1142" }], birth: "1084", death: "1142", notes: "Begründete den Stammsitz auf dem Falkenberg.", image: "" },
+          { id: "p-elisabeth", name: "Elisabeth", titles: [], birth: "1092", death: "1158", notes: "Förderin des Klosters St. Aurelia.", image: "" },
+          { id: "p-otto", name: "Otto I.", titles: [{ id: "pt2", name: "Graf von Falkenstein", start: "1142", end: "1181" }], birth: "1118", death: "1181", notes: "Erweiterte den Familienbesitz nach Süden.", image: "" },
+          { id: "p-mathilde", name: "Mathilde", titles: [{ id: "pt3", name: "Äbtissin von Aurelia", start: "1161", end: "1190" }], birth: "1122", death: "1190", notes: "Gelehrte und Chronistin ihrer Zeit.", image: "" },
+          { id: "p-konrad", name: "Konrad II.", titles: [{ id: "pt4", name: "Herr von Falkenberg", start: "1181", end: "1211" }], birth: "1148", death: "1211", notes: "Erhielt 1187 das Marktrecht.", image: "" },
+          { id: "p-agnes", name: "Agnes", titles: [], birth: "1156", death: "1224", notes: "Stiftete das Hospital am unteren Tor.", image: "" },
+          { id: "p-ludwig", name: "Ludwig", titles: [{ id: "pt5", name: "Ritter", start: "1202", end: "1237" }], birth: "1180", death: "1237", notes: "Nahm am Hofe des Kaisers diplomatische Aufgaben wahr.", image: "" },
+          { id: "p-sophia", name: "Sophia", titles: [{ id: "pt6", name: "Regentin von Falkenstein", start: "1211", end: "1228" }], birth: "1184", death: "1251", notes: "Verwaltete die Grafschaft während zweier Regentschaften.", image: "" },
+          { id: "p-heinrich", name: "Heinrich III.", titles: [{ id: "pt7", name: "Graf von Falkenstein", start: "1237", end: "1274" }], birth: "1210", death: "1274", notes: "Ließ die obere Burganlage erneuern.", image: "" }
         ],
         relations: [
           { id: "r1", parentId: "p-albrecht", childId: "p-otto" },
@@ -323,7 +337,7 @@
       return {
         id: id,
         name: stringValue(person && person.name) || "Unbenannt",
-        title: stringValue(person && person.title),
+        titles: normalizePersonTitles(person),
         birth: stringValue(person && person.birth),
         death: stringValue(person && person.death),
         notes: stringValue(person && person.notes),
@@ -385,6 +399,43 @@
 
   function safeImage(value) {
     return typeof value === "string" && /^data:image\/(png|jpeg|webp|gif);base64,/i.test(value) ? value : "";
+  }
+
+  function normalizePersonTitles(person) {
+    var source = person && Array.isArray(person.titles) ? person.titles : [];
+    var normalized = source.slice(0, 20).map(function (title) {
+      return {
+        id: stringValue(title && title.id) || uid("title"),
+        name: stringValue(title && title.name).trim(),
+        start: stringValue(title && title.start).trim(),
+        end: stringValue(title && title.end).trim()
+      };
+    }).filter(function (title) { return title.name; });
+    var legacyTitle = stringValue(person && person.title).trim();
+    if (!normalized.length && legacyTitle) {
+      normalized.push({ id: uid("title"), name: legacyTitle, start: "", end: "" });
+    }
+    return normalized;
+  }
+
+  function personTitles(person) {
+    if (!person) return [];
+    if (Array.isArray(person.titles)) return person.titles.filter(function (title) { return title && title.name; });
+    var legacyTitle = stringValue(person.title).trim();
+    return legacyTitle ? [{ id: uid("title"), name: legacyTitle, start: "", end: "" }] : [];
+  }
+
+  function titlePeriod(title) {
+    var start = stringValue(title && title.start).trim();
+    var end = stringValue(title && title.end).trim();
+    if (start && end) return start === end ? start : start + "–" + end;
+    if (start) return start;
+    if (end) return "bis " + end;
+    return "";
+  }
+
+  function titleKey(value) {
+    return stringValue(value).trim().replace(/\s+/g, " ").toLocaleLowerCase("de");
   }
 
   function safeColor(value) {
@@ -581,7 +632,13 @@
     els.selectionTitle.textContent = item.name || item.title;
     els.selectionDates.textContent = isPerson ? lifeDates(item) : eventDates(item);
     els.selectionDates.classList.toggle("hidden", !els.selectionDates.textContent);
-    var noteText = isPerson && item.title ? item.title + (item.notes ? "\n\n" + item.notes : "") : item.notes;
+    var titleSummary = isPerson ? personTitles(item).map(function (title) {
+      var period = titlePeriod(title);
+      return "• " + title.name + (period ? " · " + period : "");
+    }).join("\n") : "";
+    var noteText = isPerson
+      ? titleSummary + (titleSummary && item.notes ? "\n\n" : "") + item.notes
+      : item.notes;
     els.selectionNotes.textContent = noteText || "Keine weiteren Notizen.";
     if (item.image) {
       els.selectionImage.src = item.image;
@@ -630,7 +687,10 @@
   function renderTree(project) {
     var people = project.tree.people;
     var positions = calculateTreePositions(project);
-    var bounds = boundsFromPositions(people, positions, TREE_CARD.width, TREE_CARD.height);
+    var treeBounds = boundsFromPersonPositions(people, positions);
+    var legendEntries = getTitleLegend(project);
+    var legendLayout = legendEntries.length ? calculateTitleLegendLayout(treeBounds, legendEntries.length) : null;
+    var bounds = legendLayout ? unionBounds(treeBounds, legendLayout) : treeBounds;
     bounds.y -= 155;
     bounds.height += 155;
     bounds.x -= 50;
@@ -644,52 +704,38 @@
     renderExportHeader(els.viewportGroup, project, bounds.x + 26, bounds.y + 26, Math.max(520, bounds.width - 52), "STAMMBAUM");
 
     var lineLayer = svg("g", { "aria-hidden": "true" });
-    project.tree.relations.forEach(function (relation) {
+    project.tree.relations.filter(function (relation) { return relation.type === "partner"; }).forEach(function (relation) {
       var parentPos = positions[relation.parentId];
       var childPos = positions[relation.childId];
       if (!parentPos || !childPos) return;
-      if (relation.type === "partner") {
-        var left = parentPos.x <= childPos.x ? parentPos : childPos;
-        var right = parentPos.x <= childPos.x ? childPos : parentPos;
-        var partnerX1 = left.x + TREE_CARD.width;
-        var partnerY1 = left.y + TREE_CARD.height / 2;
-        var partnerX2 = right.x;
-        var partnerY2 = right.y + TREE_CARD.height / 2;
-        var partnerMidX = partnerX1 + (partnerX2 - partnerX1) / 2;
-        lineLayer.appendChild(svg("path", {
-          d: "M " + partnerX1 + " " + partnerY1 + " H " + partnerMidX + " V " + partnerY2 + " H " + partnerX2,
-          fill: "none",
-          stroke: COLORS.gold,
-          "stroke-width": "3",
-          "stroke-linecap": "square",
-          "stroke-linejoin": "miter",
-          "vector-effect": "non-scaling-stroke"
-        }));
-        return;
-      }
-      var x1 = parentPos.x + TREE_CARD.width / 2;
-      var y1 = parentPos.y + TREE_CARD.height;
-      var x2 = childPos.x + TREE_CARD.width / 2;
-      var y2 = childPos.y;
-      var midY = y1 + Math.max(24, (y2 - y1) / 2);
-      var path = svg("path", {
-        d: "M " + x1 + " " + y1 + " V " + midY + " H " + x2 + " V " + y2,
+      var left = parentPos.x <= childPos.x ? parentPos : childPos;
+      var right = parentPos.x <= childPos.x ? childPos : parentPos;
+      var partnerX1 = left.x + TREE_CARD.width;
+      var partnerY1 = left.y + TREE_CARD.baseHeight / 2;
+      var partnerX2 = right.x;
+      var partnerY2 = right.y + TREE_CARD.baseHeight / 2;
+      var partnerMidX = partnerX1 + (partnerX2 - partnerX1) / 2;
+      lineLayer.appendChild(svg("path", {
+        d: "M " + partnerX1 + " " + partnerY1 + " H " + partnerMidX + " V " + partnerY2 + " H " + partnerX2,
         fill: "none",
         stroke: COLORS.gold,
         "stroke-width": "3",
         "stroke-linecap": "square",
         "stroke-linejoin": "miter",
         "vector-effect": "non-scaling-stroke"
-      });
-      lineLayer.appendChild(path);
+      }));
     });
+    renderFamilyConnectors(lineLayer, project, positions);
     els.viewportGroup.appendChild(lineLayer);
 
+    var titleColors = Object.create(null);
+    legendEntries.forEach(function (entry) { titleColors[entry.key] = entry.color; });
     var nodeLayer = svg("g");
     people.forEach(function (person) {
-      nodeLayer.appendChild(createPersonNode(person, positions[person.id]));
+      nodeLayer.appendChild(createPersonNode(person, positions[person.id], titleColors));
     });
     els.viewportGroup.appendChild(nodeLayer);
+    if (legendLayout) renderTitleLegend(els.viewportGroup, legendEntries, legendLayout);
   }
 
   function calculateTreePositions(project) {
@@ -697,6 +743,24 @@
     var relations = project.tree.relations;
     var personIds = Object.create(null);
     people.forEach(function (person) { personIds[person.id] = true; });
+    var coParentsByChild = Object.create(null);
+    relations.forEach(function (relation) {
+      if (relation.type === "partner") return;
+      if (!coParentsByChild[relation.childId]) coParentsByChild[relation.childId] = [];
+      if (!coParentsByChild[relation.childId].includes(relation.parentId)) coParentsByChild[relation.childId].push(relation.parentId);
+    });
+    var coParentGroups = Object.keys(coParentsByChild).map(function (childId) {
+      return coParentsByChild[childId];
+    }).filter(function (parentIds) {
+      if (parentIds.length < 2) return false;
+      for (var first = 0; first < parentIds.length; first += 1) {
+        for (var second = first + 1; second < parentIds.length; second += 1) {
+          if (hasAncestryPath(project, parentIds[first], parentIds[second])
+            || hasAncestryPath(project, parentIds[second], parentIds[first])) return false;
+        }
+      }
+      return true;
+    });
     var levelById = Object.create(null);
     people.forEach(function (person) { levelById[person.id] = 0; });
     for (var pass = 0; pass < Math.max(1, people.length * 2); pass += 1) {
@@ -709,6 +773,15 @@
           levelById[relation.childId] = next;
           changed = true;
         }
+      });
+      coParentGroups.forEach(function (parentIds) {
+        var level = Math.max.apply(null, parentIds.map(function (id) { return levelById[id] || 0; }));
+        parentIds.forEach(function (id) {
+          if (levelById[id] !== level) {
+            levelById[id] = level;
+            changed = true;
+          }
+        });
       });
       relations.forEach(function (relation) {
         if (relation.type !== "partner") return;
@@ -732,21 +805,91 @@
       rows[level].push(person);
     });
     var auto = Object.create(null);
-    Object.keys(rows).sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (key) {
-      var row = orderPartnersTogether(rows[key], relations);
-      var total = row.length * TREE_CARD.width + Math.max(0, row.length - 1) * TREE_CARD.gapX;
-      row.forEach(function (person, index) {
-        auto[person.id] = {
-          x: -total / 2 + index * (TREE_CARD.width + TREE_CARD.gapX),
-          y: 130 + Number(key) * (TREE_CARD.height + TREE_CARD.gapY)
-        };
-      });
+    var rowOrders = Object.create(null);
+    var levels = Object.keys(rows).sort(function (a, b) { return Number(a) - Number(b); });
+    var rowY = 130;
+    levels.forEach(function (key, levelIndex) {
+      var groups = familyGroupsForRow(rows[key], relations, rowOrders, Number(key));
+      var rowOrder = [];
+      groups.forEach(function (group) { rowOrder = rowOrder.concat(group.people); });
+      rowOrders[key] = rowOrder;
+      var maxHeight = Math.max.apply(null, rowOrder.map(personCardHeight));
+
+      if (levelIndex === 0 || groups.every(function (group) { return group.parentIds.length === 0; })) {
+        var total = groups.reduce(function (sum, group, index) {
+          return sum + groupWidth(group) + (index ? TREE_CARD.familyGapX : 0);
+        }, 0);
+        var centeredCursor = -total / 2;
+        groups.forEach(function (group) {
+          placeFamilyGroup(group, centeredCursor, rowY, auto);
+          centeredCursor += groupWidth(group) + TREE_CARD.familyGapX;
+        });
+      } else {
+        var cursor = null;
+        groups.forEach(function (group) {
+          var width = groupWidth(group);
+          var parentCenters = group.parentIds.map(function (parentId) {
+            return auto[parentId] ? auto[parentId].x + TREE_CARD.width / 2 : null;
+          }).filter(function (value) { return value !== null; });
+          var desiredCenter = parentCenters.length
+            ? parentCenters.reduce(function (sum, value) { return sum + value; }, 0) / parentCenters.length
+            : (cursor === null ? 0 : cursor + TREE_CARD.familyGapX + width / 2);
+          var left = desiredCenter - width / 2;
+          if (cursor !== null) left = Math.max(left, cursor + TREE_CARD.familyGapX);
+          placeFamilyGroup(group, left, rowY, auto);
+          cursor = left + width;
+        });
+      }
+      rowY += maxHeight + TREE_CARD.gapY;
     });
     var result = Object.create(null);
     people.forEach(function (person) {
       result[person.id] = person.position || auto[person.id] || { x: 0, y: 130 };
     });
     return result;
+  }
+
+  function familyGroupsForRow(row, relations, rowOrders, level) {
+    var parentsByChild = Object.create(null);
+    relations.forEach(function (relation) {
+      if (relation.type === "partner") return;
+      if (!parentsByChild[relation.childId]) parentsByChild[relation.childId] = [];
+      if (!parentsByChild[relation.childId].includes(relation.parentId)) parentsByChild[relation.childId].push(relation.parentId);
+    });
+    var groupsByKey = Object.create(null);
+    var groups = [];
+    row.forEach(function (person, index) {
+      var parentIds = (parentsByChild[person.id] || []).slice().sort();
+      var key = parentIds.length ? parentIds.join("|") : "orphan:" + person.id;
+      if (!groupsByKey[key]) {
+        groupsByKey[key] = { key: key, parentIds: parentIds, people: [], sourceIndex: index, score: Infinity };
+        groups.push(groupsByKey[key]);
+      }
+      groupsByKey[key].people.push(person);
+    });
+    var previous = rowOrders[String(Math.max(0, level - 1))] || [];
+    var previousIndex = Object.create(null);
+    previous.forEach(function (person, index) { previousIndex[person.id] = index; });
+    groups.forEach(function (group) {
+      var indexes = group.parentIds.map(function (id) { return previousIndex[id]; }).filter(Number.isFinite);
+      if (indexes.length) group.score = indexes.reduce(function (sum, value) { return sum + value; }, 0) / indexes.length;
+      group.people = orderPartnersTogether(group.people, relations);
+    });
+    groups.sort(function (a, b) {
+      if (a.score !== b.score) return a.score - b.score;
+      return a.sourceIndex - b.sourceIndex;
+    });
+    return groups;
+  }
+
+  function groupWidth(group) {
+    return group.people.length * TREE_CARD.width + Math.max(0, group.people.length - 1) * TREE_CARD.gapX;
+  }
+
+  function placeFamilyGroup(group, left, y, positions) {
+    group.people.forEach(function (person, index) {
+      positions[person.id] = { x: left + index * (TREE_CARD.width + TREE_CARD.gapX), y: y };
+    });
   }
 
   function orderPartnersTogether(row, relations) {
@@ -778,55 +921,184 @@
     return ordered;
   }
 
-  function createPersonNode(person, position) {
+  function personCardHeight(person) {
+    return TREE_CARD.baseHeight + personTitles(person).length * TREE_CARD.titleHeight;
+  }
+
+  function boundsFromPersonPositions(people, positions) {
+    if (!people.length) return { x: -400, y: -80, width: 800, height: 600 };
+    var result = null;
+    people.forEach(function (person) {
+      var position = positions[person.id] || { x: 0, y: 0 };
+      var cardBounds = { x: position.x, y: position.y, width: TREE_CARD.width, height: personCardHeight(person) };
+      result = result ? unionBounds(result, cardBounds) : cardBounds;
+    });
+    return result;
+  }
+
+  function getTitleLegend(project) {
+    var seen = Object.create(null);
+    var entries = [];
+    (project && project.tree ? project.tree.people : []).forEach(function (person) {
+      personTitles(person).forEach(function (title) {
+        var key = titleKey(title.name);
+        if (!key || seen[key]) return;
+        seen[key] = true;
+        entries.push({ key: key, name: title.name.trim(), color: TITLE_COLORS[entries.length % TITLE_COLORS.length] });
+      });
+    });
+    return entries;
+  }
+
+  function calculateTitleLegendLayout(treeBounds, count) {
+    var rows = Math.min(7, count);
+    var columns = Math.ceil(count / 7);
+    return {
+      x: treeBounds.x + treeBounds.width + 82,
+      y: Math.max(130, treeBounds.y),
+      width: 34 + columns * 190,
+      height: 66 + rows * 38,
+      columns: columns
+    };
+  }
+
+  function renderTitleLegend(parent, entries, layout) {
+    var group = svg("g", { "aria-label": "Legende der Titel" });
+    group.appendChild(svg("rect", {
+      x: layout.x, y: layout.y, width: layout.width, height: layout.height,
+      fill: COLORS.white, "fill-opacity": ".9", stroke: COLORS.ink, "stroke-opacity": ".28", "stroke-width": "1"
+    }));
+    group.appendChild(svg("text", {
+      x: layout.x + layout.width / 2, y: layout.y + 34,
+      class: "export-title", fill: COLORS.ink, "font-size": "24", "text-anchor": "middle"
+    }, "TITEL"));
+    entries.forEach(function (entry, index) {
+      var column = Math.floor(index / 7);
+      var row = index % 7;
+      var itemX = layout.x + 18 + column * 190;
+      var itemY = layout.y + 52 + row * 38;
+      group.appendChild(svg("rect", { x: itemX, y: itemY, width: "170", height: "29", fill: entry.color }));
+      var lines = textLines(entry.name, 25, 2);
+      var startY = itemY + (lines.length === 1 ? 19 : 11.5);
+      lines.forEach(function (line, lineIndex) {
+        group.appendChild(svg("text", {
+          x: itemX + 85, y: startY + lineIndex * 11,
+          class: "node-text", fill: contrastColor(entry.color), "font-size": "9", "font-weight": "800", "text-anchor": "middle"
+        }, line));
+      });
+    });
+    parent.appendChild(group);
+  }
+
+  function renderFamilyConnectors(layer, project, positions) {
+    var peopleById = Object.create(null);
+    project.tree.people.forEach(function (person) { peopleById[person.id] = person; });
+    var parentsByChild = Object.create(null);
+    project.tree.relations.forEach(function (relation) {
+      if (relation.type === "partner") return;
+      if (!parentsByChild[relation.childId]) parentsByChild[relation.childId] = [];
+      if (!parentsByChild[relation.childId].includes(relation.parentId)) parentsByChild[relation.childId].push(relation.parentId);
+    });
+    var familiesByKey = Object.create(null);
+    Object.keys(parentsByChild).forEach(function (childId) {
+      var parentIds = parentsByChild[childId].slice().sort();
+      var key = parentIds.join("|");
+      if (!familiesByKey[key]) familiesByKey[key] = { parentIds: parentIds, childIds: [] };
+      familiesByKey[key].childIds.push(childId);
+    });
+    Object.keys(familiesByKey).forEach(function (key) {
+      var family = familiesByKey[key];
+      var parentAnchors = family.parentIds.map(function (id) {
+        var position = positions[id];
+        var person = peopleById[id];
+        return position && person ? { x: position.x + TREE_CARD.width / 2, y: position.y + personCardHeight(person) } : null;
+      }).filter(Boolean);
+      var childAnchors = family.childIds.map(function (id) {
+        var position = positions[id];
+        return position ? { x: position.x + TREE_CARD.width / 2, y: position.y } : null;
+      }).filter(Boolean).sort(function (a, b) { return a.x - b.x; });
+      if (!parentAnchors.length || !childAnchors.length) return;
+      var maxParentY = Math.max.apply(null, parentAnchors.map(function (anchor) { return anchor.y; }));
+      var minChildY = Math.min.apply(null, childAnchors.map(function (anchor) { return anchor.y; }));
+      var parentJoinY = maxParentY + 16;
+      var childBusY = minChildY > parentJoinY + 34
+        ? parentJoinY + (minChildY - parentJoinY) * 0.55
+        : parentJoinY + 34;
+      var parentCenterX = parentAnchors.reduce(function (sum, anchor) { return sum + anchor.x; }, 0) / parentAnchors.length;
+      var parentMinX = Math.min.apply(null, parentAnchors.map(function (anchor) { return anchor.x; }));
+      var parentMaxX = Math.max.apply(null, parentAnchors.map(function (anchor) { return anchor.x; }));
+      var childMinX = childAnchors[0].x;
+      var childMaxX = childAnchors[childAnchors.length - 1].x;
+      parentAnchors.forEach(function (anchor) {
+        layer.appendChild(svg("path", {
+          d: "M " + anchor.x + " " + anchor.y + " V " + parentJoinY,
+          fill: "none", stroke: COLORS.gold, "stroke-width": "3", "vector-effect": "non-scaling-stroke"
+        }));
+      });
+      layer.appendChild(svg("path", {
+        d: "M " + parentMinX + " " + parentJoinY + " H " + parentMaxX + " M " + parentCenterX + " " + parentJoinY + " V " + childBusY + " M " + childMinX + " " + childBusY + " H " + childMaxX,
+        fill: "none", stroke: COLORS.gold, "stroke-width": "3", "stroke-linejoin": "miter", "vector-effect": "non-scaling-stroke"
+      }));
+      childAnchors.forEach(function (anchor) {
+        layer.appendChild(svg("path", {
+          d: "M " + anchor.x + " " + childBusY + " V " + anchor.y,
+          fill: "none", stroke: COLORS.gold, "stroke-width": "3", "vector-effect": "non-scaling-stroke"
+        }));
+      });
+    });
+  }
+
+  function createPersonNode(person, position, titleColors) {
     var selected = state.selected && state.selected.type === "person" && state.selected.id === person.id;
-    var cardFill = selected ? COLORS.goldPale : COLORS.gold;
+    var cardFill = COLORS.gold;
     var cardText = contrastColor(cardFill);
+    var titles = personTitles(person);
+    var totalHeight = personCardHeight(person);
     var group = svg("g", {
       class: "entity-node",
       transform: "translate(" + position.x + " " + position.y + ")",
       tabindex: "0",
       role: "button",
-      "aria-label": person.name + (lifeDates(person) ? ", " + lifeDates(person) : ""),
+      "aria-label": person.name + (lifeDates(person) ? ", " + lifeDates(person) : "") + (titles.length ? ", " + titles.map(function (title) { var period = titlePeriod(title); return title.name + (period ? " " + period : ""); }).join(", ") : ""),
       "data-type": "person",
       "data-id": person.id
     });
-    var outline = svg("rect", {
+    group.appendChild(svg("rect", {
       class: "node-focus",
-      x: selected ? "-5" : "0",
-      y: selected ? "-5" : "0",
-      width: selected ? TREE_CARD.width + 10 : TREE_CARD.width,
-      height: selected ? TREE_CARD.height + 10 : TREE_CARD.height,
+      x: "0", y: "0", width: TREE_CARD.width, height: TREE_CARD.baseHeight,
       fill: cardFill,
-      stroke: selected ? COLORS.ink : "none",
-      "stroke-width": selected ? "2" : "0",
-      "data-selection-outline": selected ? "true" : "false"
-    });
-    group.appendChild(outline);
+      stroke: "none"
+    }));
+    if (selected) {
+      group.appendChild(svg("rect", {
+        x: "-5", y: "-5", width: TREE_CARD.width + 10, height: totalHeight + 10,
+        fill: "none", stroke: COLORS.ink, "stroke-width": "2", "data-selection-ring": "true"
+      }));
+    }
 
     var textX = TREE_CARD.width / 2;
     var textAnchor = "middle";
     if (person.image) {
-      var imageWidth = 68;
+      var imageWidth = 48;
       var image = svg("image", {
-        x: "0", y: "0", width: String(imageWidth), height: String(TREE_CARD.height),
+        x: "0", y: "0", width: String(imageWidth), height: String(TREE_CARD.baseHeight),
         preserveAspectRatio: "xMidYMid slice", href: person.image
       });
       image.setAttributeNS(XLINK_NS, "xlink:href", person.image);
       group.appendChild(image);
-      group.appendChild(svg("line", { x1: imageWidth, y1: "0", x2: imageWidth, y2: String(TREE_CARD.height), stroke: COLORS.white, "stroke-width": "2" }));
-      textX = imageWidth + 12;
+      group.appendChild(svg("line", { x1: imageWidth, y1: "0", x2: imageWidth, y2: String(TREE_CARD.baseHeight), stroke: COLORS.white, "stroke-width": "1.5" }));
+      textX = imageWidth + 9;
       textAnchor = "start";
     }
-    var available = person.image ? TREE_CARD.width - textX - 10 : TREE_CARD.width - 24;
-    var nameLines = textLines(person.name, available < 100 ? 13 : 20, 2);
-    var nameY = nameLines.length === 1 ? 39 : 29;
+    var available = person.image ? TREE_CARD.width - textX - 8 : TREE_CARD.width - 18;
+    var nameLines = textLines(person.name, available < 100 ? 14 : 22, 2);
+    var nameY = nameLines.length === 1 ? 24 : 16;
     nameLines.forEach(function (line, index) {
       group.appendChild(svg("text", {
-        x: textX, y: nameY + index * 17,
+        x: textX, y: nameY + index * 14,
         class: "node-text",
         fill: cardText,
-        "font-size": available < 100 ? "12" : "13",
+        "font-size": available < 100 ? "10.5" : "11.5",
         "font-weight": "800",
         "text-anchor": textAnchor
       }, line));
@@ -834,16 +1106,23 @@
     var dates = lifeDates(person);
     if (dates) {
       group.appendChild(svg("text", {
-        x: textX, y: nameY + nameLines.length * 17 + 4,
-        class: "node-text", fill: cardText, "font-size": "10", "font-weight": "700", "text-anchor": textAnchor
+        x: textX, y: TREE_CARD.baseHeight - 9,
+        class: "node-text", fill: cardText, "font-size": "9", "font-weight": "700", "text-anchor": textAnchor
       }, dates));
     }
-    if (person.title && !person.image) {
+    titles.forEach(function (title, index) {
+      var y = TREE_CARD.baseHeight + index * TREE_CARD.titleHeight;
+      var color = titleColors[titleKey(title.name)] || TITLE_COLORS[0];
+      group.appendChild(svg("rect", { x: "0", y: y, width: TREE_CARD.width, height: TREE_CARD.titleHeight, fill: color }));
       group.appendChild(svg("text", {
-        x: textX, y: TREE_CARD.height - 11,
-        class: "node-text", fill: cardText, "fill-opacity": ".72", "font-size": "8.5", "font-weight": "700", "text-anchor": textAnchor
-      }, truncate(person.title, 30)));
-    }
+        x: TREE_CARD.width / 2, y: y + 15,
+        class: "node-text", fill: contrastColor(color), "font-size": "9.5", "font-weight": "800", "text-anchor": "middle"
+      }, truncate(titlePeriod(title) || title.name, 29)));
+    });
+    group.appendChild(svg("rect", {
+      x: "0", y: "0", width: TREE_CARD.width, height: totalHeight,
+      fill: "none", stroke: COLORS.ink, "stroke-opacity": ".22", "stroke-width": "1"
+    }));
     group.addEventListener("click", function (event) {
       event.stopPropagation();
       selectEntity("person", person.id);
@@ -1138,16 +1417,102 @@
     var person = id ? project.tree.people.find(function (item) { return item.id === id; }) : null;
     state.editingId = person ? person.id : null;
     state.editingImage = person ? person.image : "";
+    state.editingTitles = person ? deepClone(personTitles(person)) : [];
     els.personDialogTitle.textContent = person ? "Person bearbeiten" : "Person hinzufügen";
     els.personName.value = person ? person.name : "";
-    els.personTitleField.value = person ? person.title : "";
     els.personBirth.value = person ? person.birth : "";
     els.personDeath.value = person ? person.death : "";
     els.personNotes.value = person ? person.notes : "";
+    updateTitleSuggestions(project);
+    renderPersonTitleRows(state.editingTitles);
     els.personImageInput.value = "";
     setImageDraft("person", state.editingImage);
     els.personDialog.showModal();
     window.setTimeout(function () { els.personName.focus(); }, 40);
+  }
+
+  function updateTitleSuggestions(project) {
+    els.titleSuggestions.replaceChildren();
+    getTitleLegend(project).forEach(function (entry) {
+      var option = document.createElement("option");
+      option.value = entry.name;
+      els.titleSuggestions.appendChild(option);
+    });
+  }
+
+  function renderPersonTitleRows(titles) {
+    els.personTitlesList.replaceChildren();
+    (titles && titles.length ? titles : [{ id: uid("title"), name: "", start: "", end: "" }]).forEach(addPersonTitleRow);
+  }
+
+  function addPersonTitleRow(title) {
+    if (!title && els.personTitlesList.children.length >= 20) {
+      showToast("Pro Person sind höchstens 20 Titel möglich.", true);
+      return;
+    }
+    var data = title || { id: uid("title"), name: "", start: "", end: "" };
+    var row = document.createElement("div");
+    row.className = "title-entry-row";
+    row.dataset.titleId = stringValue(data.id) || uid("title");
+
+    var fields = [
+      { key: "name", label: "Titel", value: data.name, placeholder: "z. B. Markgraf von Meißen", className: " title-name-field" },
+      { key: "start", label: "Von", value: data.start, placeholder: "z. B. 985" },
+      { key: "end", label: "Bis", value: data.end, placeholder: "z. B. 1002" }
+    ];
+    fields.forEach(function (field) {
+      var label = document.createElement("label");
+      label.className = "field" + (field.className || "");
+      var caption = document.createElement("span");
+      caption.textContent = field.label;
+      var input = document.createElement("input");
+      input.type = "text";
+      input.maxLength = field.key === "name" ? 100 : 30;
+      input.placeholder = field.placeholder;
+      input.value = stringValue(field.value);
+      input.dataset.titleField = field.key;
+      if (field.key === "name") input.setAttribute("list", "titleSuggestions");
+      label.append(caption, input);
+      row.appendChild(label);
+    });
+    var remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove-title-button";
+    remove.setAttribute("data-remove-title", "true");
+    remove.setAttribute("aria-label", "Titel entfernen");
+    remove.textContent = "×";
+    row.appendChild(remove);
+    els.personTitlesList.appendChild(row);
+  }
+
+  function collectPersonTitles() {
+    var titles = [];
+    var invalidInput = null;
+    Array.from(els.personTitlesList.querySelectorAll(".title-entry-row")).slice(0, 20).forEach(function (row) {
+      var nameInput = row.querySelector('[data-title-field="name"]');
+      var startInput = row.querySelector('[data-title-field="start"]');
+      var endInput = row.querySelector('[data-title-field="end"]');
+      var name = nameInput.value.trim();
+      var start = startInput.value.trim();
+      var end = endInput.value.trim();
+      if (!name && (start || end) && !invalidInput) invalidInput = nameInput;
+      if (name) titles.push({
+        id: row.dataset.titleId || uid("title"),
+        name: name,
+        start: start,
+        end: end
+      });
+    });
+    if (invalidInput) {
+      invalidInput.setCustomValidity("Bitte zuerst einen Titel eingeben.");
+      invalidInput.reportValidity();
+      invalidInput.addEventListener("input", function clearTitleValidity() {
+        invalidInput.setCustomValidity("");
+        invalidInput.removeEventListener("input", clearTitleValidity);
+      });
+      return null;
+    }
+    return titles;
   }
 
   function savePerson(event) {
@@ -1157,10 +1522,12 @@
       els.personName.focus();
       return;
     }
+    var titles = collectPersonTitles();
+    if (!titles) return;
     var editingId = state.editingId;
     var personData = {
       name: name,
-      title: els.personTitleField.value.trim(),
+      titles: titles,
       birth: els.personBirth.value.trim(),
       death: els.personDeath.value.trim(),
       notes: els.personNotes.value.trim(),
@@ -1170,7 +1537,10 @@
     mutate(editingId ? "Person bearbeitet" : "Person hinzugefügt", function (project) {
       if (editingId) {
         var person = project.tree.people.find(function (item) { return item.id === editingId; });
-        if (person) Object.assign(person, personData);
+        if (person) {
+          Object.assign(person, personData);
+          delete person.title;
+        }
       } else {
         project.tree.people.push(Object.assign({ id: newId, position: nextTreePosition(project) }, personData));
       }
@@ -1950,11 +2320,12 @@
     root.appendChild(defs);
     var content = els.viewportGroup.cloneNode(true);
     content.removeAttribute("transform");
+    content.querySelectorAll("[data-selection-ring='true']").forEach(function (ring) { ring.remove(); });
     content.querySelectorAll("[data-selection-outline='true']").forEach(function (outline) {
       outline.setAttribute("x", "0");
       outline.setAttribute("y", "0");
       outline.setAttribute("width", getProject().mode === "tree" ? String(TREE_CARD.width) : String(TIMELINE_CARD.width));
-      outline.setAttribute("height", getProject().mode === "tree" ? String(TREE_CARD.height) : String(TIMELINE_CARD.height));
+      outline.setAttribute("height", getProject().mode === "tree" ? String(TREE_CARD.baseHeight) : String(TIMELINE_CARD.height));
       outline.setAttribute("fill", COLORS.gold);
       outline.setAttribute("stroke", "none");
       outline.setAttribute("stroke-width", "0");

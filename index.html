@@ -182,7 +182,7 @@
 
   <div class="sidebar-scrim hidden" id="sidebarScrim"></div>
 
-  <dialog class="editor-dialog" id="personDialog">
+  <dialog class="editor-dialog person-dialog" id="personDialog">
     <form method="dialog" id="personForm">
       <div class="dialog-header">
         <div>
@@ -197,10 +197,17 @@
             <span>Name <em>Pflichtfeld</em></span>
             <input id="personName" name="name" required maxlength="80" placeholder="z. B. Friedrich I.">
           </label>
-          <label class="field full-width">
-            <span>Titel oder Rolle</span>
-            <input id="personTitleField" name="title" maxlength="100" placeholder="z. B. Markgraf von Baden">
-          </label>
+          <div class="titles-editor full-width">
+            <div class="titles-editor-heading">
+              <div>
+                <span>Titel und Amtszeiten</span>
+                <small>Jeder Titel erscheint automatisch einmal in der Legende.</small>
+              </div>
+              <button class="small-add-button" id="addTitleButton" type="button">+ Titel</button>
+            </div>
+            <div class="person-titles-list" id="personTitlesList"></div>
+            <datalist id="titleSuggestions"></datalist>
+          </div>
           <label class="field">
             <span>Geburt</span>
             <input id="personBirth" name="birth" maxlength="30" placeholder="z. B. 1249 oder um 1249">
@@ -380,11 +387,11 @@
     <div class="dialog-body help-content">
       <section>
         <span class="help-number">01</span>
-        <div><h3>Inhalte anlegen</h3><p>Wechsle zwischen Stammbaum und Zeitleiste. Mit <strong>+ Person</strong> oder <strong>+ Ereignis</strong> erstellst du Karten. Bilder werden direkt im Projekt gespeichert.</p></div>
+        <div><h3>Inhalte anlegen</h3><p>Wechsle zwischen Stammbaum und Zeitleiste. Personen können Bilder sowie mehrere Titel mit Beginn und Ende erhalten.</p></div>
       </section>
       <section>
         <span class="help-number">02</span>
-        <div><h3>Ordnen und gestalten</h3><p>Verbinde Elternteile mit Kindern oder lass alle Karten automatisch anordnen. Über <strong>Farbe</strong> färbst du Karten und Verbindungslinien frei ein.</p></div>
+        <div><h3>Ordnen und gestalten</h3><p>Die automatische Anordnung hält Geschwister mit denselben Eltern zusammen. Verwendete Titel erscheinen ohne Dopplungen in der farbigen Legende.</p></div>
       </section>
       <section>
         <span class="help-number">03</span>
