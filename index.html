@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17130d">
+  <meta name="description" content="Adelschronik – ein lokaler Editor für elegante Stammbäume und historische Zeitleisten.">
+  <title>Adelschronik – Stammbaum &amp; Zeitleiste</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar" aria-label="Projektverwaltung">
+      <div class="brand">
+        <svg class="brand-shield" viewBox="0 0 44 52" aria-hidden="true">
+          <path d="M3 3h38v20c0 13-8 22-19 27C11 45 3 36 3 23Z" fill="#f2b537" stroke="#17130d" stroke-width="2"/>
+          <path d="M4 8 37 37c-3 5-8 9-15 12C11 44 4 35 4 23Z" fill="#a93227"/>
+        </svg>
+        <div>
+          <p class="eyebrow">Werkstatt für Geschichte</p>
+          <h1>Adelschronik</h1>
+        </div>
+      </div>
+
+      <button class="sidebar-close icon-button" id="sidebarClose" type="button" aria-label="Seitenleiste schließen">×</button>
+
+      <div class="sidebar-scroll">
+        <section class="sidebar-section project-section">
+          <div class="section-heading">
+            <h2>Meine Projekte</h2>
+            <button class="round-button" id="newProjectButton" type="button" title="Neues Projekt" aria-label="Neues Projekt">+</button>
+          </div>
+          <div class="project-list" id="projectList" role="list"></div>
+        </section>
+
+        <section class="sidebar-section">
+          <div class="section-heading">
+            <h2>Ansicht</h2>
+          </div>
+          <div class="mode-switch" role="group" aria-label="Darstellungsart">
+            <button class="mode-button active" id="treeModeButton" type="button" data-mode="tree" aria-pressed="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v5M6 13V9h12v4M6 13v5m6-9v9m6-5v5"/></svg>
+              Stammbaum
+            </button>
+            <button class="mode-button" id="timelineModeButton" type="button" data-mode="timeline" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M7 9v6m5-6v6m5-6v6"/></svg>
+              Zeitleiste
+            </button>
+          </div>
+        </section>
+
+        <section class="sidebar-section" id="selectionPanel">
+          <div class="section-heading">
+            <h2>Auswahl</h2>
+          </div>
+          <div class="empty-selection" id="emptySelection">
+            <span class="empty-selection-mark">✦</span>
+            <p>Wähle eine Karte aus, um Details zu sehen und sie zu bearbeiten.</p>
+          </div>
+          <div class="selection-card hidden" id="selectionCard">
+            <div class="selection-image-wrap hidden" id="selectionImageWrap">
+              <img id="selectionImage" alt="">
+            </div>
+            <p class="selection-kind" id="selectionKind"></p>
+            <h3 id="selectionTitle"></h3>
+            <p class="selection-dates" id="selectionDates"></p>
+            <p class="selection-notes" id="selectionNotes"></p>
+            <div class="selection-actions">
+              <button class="secondary-button small" id="editSelectedButton" type="button">Bearbeiten</button>
+              <button class="text-button danger" id="deleteSelectedButton" type="button">Löschen</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="save-indicator" id="saveIndicator" role="status">
+          <span class="save-dot"></span>
+          <span>Lokale Speicherung aktiv</span>
+        </div>
+        <button class="help-link" id="helpButton" type="button">Hilfe &amp; Tastenkürzel</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="topbar-title-group">
+          <button class="icon-button mobile-menu-button" id="mobileMenuButton" type="button" aria-label="Projektleiste öffnen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+          <div class="project-heading">
+            <p class="project-mode-label" id="projectModeLabel">Stammbaum</p>
+            <button class="editable-title" id="projectTitleButton" type="button" title="Projekttitel bearbeiten">
+              <span id="projectTitle">Unbenanntes Projekt</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5.5 4 4M5 19l3.5-.8L18 7.7 15.3 5 4.8 15.5Z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="secondary-button hide-small" id="undoButton" type="button" title="Rückgängig (Strg/⌘ + Z)" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 5 11l4 4M6 11h7a5 5 0 0 1 5 5v1"/></svg>
+            Rückgängig
+          </button>
+          <button class="secondary-button" id="dataMenuButton" type="button" aria-label="Projekt sichern und laden" aria-haspopup="menu" aria-expanded="false" title="Projektdatei sichern oder laden">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 18v2h14v-2"/></svg>
+            <span class="hide-tiny">Projekt sichern</span>
+          </button>
+          <div class="popover-menu hidden" id="dataMenu" role="menu">
+            <button id="exportJsonButton" type="button" role="menuitem">Projekt als JSON exportieren</button>
+            <button id="importJsonButton" type="button" role="menuitem">JSON importieren</button>
+            <button id="duplicateProjectButton" type="button" role="menuitem">Projekt duplizieren</button>
+            <div class="menu-divider"></div>
+            <button id="deleteProjectButton" class="danger" type="button" role="menuitem">Projekt löschen</button>
+          </div>
+          <button class="primary-button" id="exportButton" type="button" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 13v7h14v-7"/></svg>
+            Exportieren
+          </button>
+          <div class="popover-menu export-menu hidden" id="exportMenu" role="menu">
+            <button id="exportPngButton" type="button" role="menuitem"><strong>PNG</strong><span>Für Bilder und soziale Medien</span></button>
+            <button id="exportSvgButton" type="button" role="menuitem"><strong>SVG</strong><span>Skalierbar für Druck und Design</span></button>
+          </div>
+        </div>
+      </header>
+
+      <section class="commandbar" aria-label="Werkzeuge">
+        <div class="command-group">
+          <button class="tool-button tree-only" id="addPersonButton" type="button">
+            <span class="tool-icon">+</span>
+            Person
+          </button>
+          <button class="tool-button tree-only" id="addRelationButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v6M7 14v-4h10v4M7 14v6m10-6v6"/></svg>
+            Verwandtschaft
+          </button>
+          <button class="tool-button timeline-only hidden" id="addEventButton" type="button">
+            <span class="tool-icon">+</span>
+            Ereignis
+          </button>
+          <button class="tool-button" id="arrangeButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4"/></svg>
+            <span id="arrangeButtonLabel">Automatisch anordnen</span>
+          </button>
+          <label class="tool-button color-tool" title="Farbe der Karten und Verbindungslinien ändern">
+            <input id="accentColorPicker" type="color" value="#F2BC52" aria-label="Farbe der Darstellung">
+            <span>Farbe</span>
+          </label>
+        </div>
+        <div class="command-hint" id="commandHint">Karten verschieben · freie Fläche ziehen · Mausrad zum Zoomen</div>
+        <div class="zoom-controls" aria-label="Zoom">
+          <button id="zoomOutButton" type="button" aria-label="Verkleinern">−</button>
+          <button id="zoomResetButton" type="button" class="zoom-value" title="Auf 100 % setzen">100%</button>
+          <button id="zoomInButton" type="button" aria-label="Vergrößern">+</button>
+          <button id="fitButton" type="button" class="fit-button" title="Alles einpassen" aria-label="Alles einpassen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M8 20H4v-4m12 4h4v-4"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="canvas-shell" id="canvasShell" aria-label="Arbeitsfläche">
+        <svg id="editorCanvas" class="editor-canvas" xmlns="http://www.w3.org/2000/svg" role="group" aria-labelledby="canvasTitle canvasDescription">
+          <title id="canvasTitle">Historische Darstellung</title>
+          <desc id="canvasDescription">Interaktive Arbeitsfläche für Stammbaum oder Zeitleiste.</desc>
+          <defs id="canvasDefs"></defs>
+          <rect class="canvas-background" id="canvasBackground" x="-12000" y="-12000" width="24000" height="24000"></rect>
+          <g id="viewportGroup"></g>
+        </svg>
+        <div class="canvas-empty hidden" id="canvasEmpty">
+          <svg viewBox="0 0 72 72" aria-hidden="true"><path d="M36 10v18M20 40V28h32v12M20 40v18m16-30v30m16-18v18"/></svg>
+          <h2 id="emptyTitle">Beginne deinen Stammbaum</h2>
+          <p id="emptyText">Füge die erste Person hinzu. Danach kannst du Eltern und Kinder miteinander verbinden.</p>
+          <button class="primary-button" id="emptyActionButton" type="button">Erste Person hinzufügen</button>
+        </div>
+        <div class="canvas-tip" id="canvasTip">
+          <span>Leertaste</span> + Ziehen zum Verschieben
+          <button type="button" id="dismissTip" aria-label="Hinweis schließen">×</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="sidebar-scrim hidden" id="sidebarScrim"></div>
+
+  <dialog class="editor-dialog" id="personDialog">
+    <form method="dialog" id="personForm">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Stammbaum</p>
+          <h2 id="personDialogTitle">Person hinzufügen</h2>
+        </div>
+        <button class="dialog-close" type="button" data-close-dialog="personDialog" aria-label="Dialog schließen">×</button>
+      </div>
+      <div class="dialog-body two-column-form">
+        <div class="form-fields">
+          <label class="field full-width">
+            <span>Name <em>Pflichtfeld</em></span>
+            <input id="personName" name="name" required maxlength="80" placeholder="z. B. Friedrich I.">
+          </label>
+          <label class="field full-width">
+            <span>Titel oder Rolle</span>
+            <input id="personTitleField" name="title" maxlength="100" placeholder="z. B. Markgraf von Baden">
+          </label>
+          <label class="field">
+            <span>Geburt</span>
+            <input id="personBirth" name="birth" maxlength="30" placeholder="z. B. 1249 oder um 1249">
+          </label>
+          <label class="field">
+            <span>Tod</span>
+            <input id="personDeath" name="death" maxlength="30" placeholder="z. B. 1268">
+          </label>
+          <label class="field full-width">
+            <span>Notiz</span>
+            <textarea id="personNotes" name="notes" rows="4" maxlength="500" placeholder="Kurze biografische Notiz …"></textarea>
+          </label>
+        </div>
+        <div class="image-field">
+          <span class="field-label">Porträt oder Wappen</span>
+          <button class="image-dropzone" id="personImageDropzone" type="button">
+            <img id="personImagePreview" class="hidden" alt="Bildvorschau">
+            <span class="image-placeholder" id="personImagePlaceholder">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM7 15l3-3 3 3 2-2 3 3M8 9h.01"/></svg>
+              Bild auswählen
+              <small>JPG, PNG oder WebP</small>
+            </span>
+          </button>
+          <input class="visually-hidden" id="personImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+          <button class="text-button danger hidden" id="removePersonImageButton" type="button">Bild entfernen</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="secondary-button" type="button" data-close-dialog="personDialog">Abbrechen</button>
+        <button class="primary-button" type="submit">Person speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="editor-dialog" id="eventDialog">
+    <form method="dialog" id="eventForm">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Zeitleiste</p>
+          <h2 id="eventDialogTitle">Ereignis hinzufügen</h2>
+        </div>
+        <button class="dialog-close" type="button" data-close-dialog="eventDialog" aria-label="Dialog schließen">×</button>
+      </div>
+      <div class="dialog-body two-column-form">
+        <div class="form-fields">
+          <label class="field full-width">
+            <span>Titel <em>Pflichtfeld</em></span>
+            <input id="eventTitle" name="title" required maxlength="100" placeholder="z. B. Gründung der Markgrafschaft">
+          </label>
+          <label class="field full-width">
+            <span>Kategorie oder Ort</span>
+            <input id="eventCategory" name="category" maxlength="80" placeholder="z. B. Politik · Baden">
+          </label>
+          <label class="field">
+            <span>Beginn <em>Jahr nötig</em></span>
+            <input id="eventStart" name="start" required maxlength="30" placeholder="z. B. 1112">
+          </label>
+          <label class="field">
+            <span>Ende <small>(optional)</small></span>
+            <input id="eventEnd" name="end" maxlength="30" placeholder="z. B. 1130">
+          </label>
+          <label class="field full-width">
+            <span>Beschreibung</span>
+            <textarea id="eventNotes" name="notes" rows="4" maxlength="700" placeholder="Was ist geschehen und warum ist es wichtig?"></textarea>
+          </label>
+        </div>
+        <div class="image-field">
+          <span class="field-label">Bild oder Dokument</span>
+          <button class="image-dropzone" id="eventImageDropzone" type="button">
+            <img id="eventImagePreview" class="hidden" alt="Bildvorschau">
+            <span class="image-placeholder" id="eventImagePlaceholder">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM7 15l3-3 3 3 2-2 3 3M8 9h.01"/></svg>
+              Bild auswählen
+              <small>JPG, PNG oder WebP</small>
+            </span>
+          </button>
+          <input class="visually-hidden" id="eventImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+          <button class="text-button danger hidden" id="removeEventImageButton" type="button">Bild entfernen</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="secondary-button" type="button" data-close-dialog="eventDialog">Abbrechen</button>
+        <button class="primary-button" type="submit">Ereignis speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="editor-dialog compact-dialog" id="relationDialog">
+    <form method="dialog" id="relationForm">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Verwandtschaft</p>
+          <h2 id="relationDialogTitle">Verwandtschaft eintragen</h2>
+        </div>
+        <button class="dialog-close" type="button" data-close-dialog="relationDialog" aria-label="Dialog schließen">×</button>
+      </div>
+      <div class="dialog-body relation-fields">
+        <fieldset class="choice-field relation-type-field">
+          <legend>Art der Verbindung</legend>
+          <label><input type="radio" name="relationType" value="parent" checked><span>Elternteil &amp; Kind</span></label>
+          <label><input type="radio" name="relationType" value="partner"><span>Partnerschaft</span></label>
+        </fieldset>
+        <label class="field">
+          <span id="relationFirstLabel">Elternteil</span>
+          <select id="relationParent" required></select>
+        </label>
+        <span class="relation-arrow" aria-hidden="true">→</span>
+        <label class="field">
+          <span id="relationSecondLabel">Kind</span>
+          <select id="relationChild" required></select>
+        </label>
+        <p class="form-message hidden" id="relationMessage" role="alert"></p>
+        <div class="existing-relations" id="existingRelations">
+          <h3>Bestehende Verbindungen</h3>
+          <div class="relation-list" id="relationList"></div>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="secondary-button" type="button" data-close-dialog="relationDialog">Abbrechen</button>
+        <button class="primary-button" type="submit">Verbindung speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="editor-dialog compact-dialog" id="projectDialog">
+    <form method="dialog" id="projectForm">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Projekt</p>
+          <h2 id="projectDialogTitle">Neues Projekt</h2>
+        </div>
+        <button class="dialog-close" type="button" data-close-dialog="projectDialog" aria-label="Dialog schließen">×</button>
+      </div>
+      <div class="dialog-body project-form-fields">
+        <label class="field">
+          <span>Projekttitel</span>
+          <input id="projectName" required maxlength="100" placeholder="z. B. Haus Baden">
+        </label>
+        <label class="field">
+          <span>Untertitel</span>
+          <input id="projectSubtitle" maxlength="140" placeholder="z. B. Eine Dynastie vom Mittelalter bis heute">
+        </label>
+        <div class="image-field project-emblem-field">
+          <span class="field-label">Eigenes Wappen <small>(optional)</small></span>
+          <button class="image-dropzone" id="projectImageDropzone" type="button">
+            <img id="projectImagePreview" class="hidden" alt="Wappenvorschau">
+            <span class="image-placeholder" id="projectImagePlaceholder">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 19 6v5c0 5-3 8-7 10-4-2-7-5-7-10V6Z"/></svg>
+              Wappen auswählen
+              <small>JPG, PNG oder WebP</small>
+            </span>
+          </button>
+          <input class="visually-hidden" id="projectImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+          <button class="text-button danger hidden" id="removeProjectImageButton" type="button">Wappen entfernen</button>
+        </div>
+        <fieldset class="choice-field" id="newProjectModeField">
+          <legend>Startansicht</legend>
+          <label><input type="radio" name="projectMode" value="tree" checked><span>Stammbaum</span></label>
+          <label><input type="radio" name="projectMode" value="timeline"><span>Zeitleiste</span></label>
+        </fieldset>
+      </div>
+      <div class="dialog-footer">
+        <button class="secondary-button" type="button" data-close-dialog="projectDialog">Abbrechen</button>
+        <button class="primary-button" type="submit">Projekt speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="editor-dialog help-dialog" id="helpDialog">
+    <div class="dialog-header">
+      <div>
+        <p class="eyebrow">Kurzanleitung</p>
+        <h2>So entsteht deine Chronik</h2>
+      </div>
+      <button class="dialog-close" type="button" data-close-dialog="helpDialog" aria-label="Dialog schließen">×</button>
+    </div>
+    <div class="dialog-body help-content">
+      <section>
+        <span class="help-number">01</span>
+        <div><h3>Inhalte anlegen</h3><p>Wechsle zwischen Stammbaum und Zeitleiste. Mit <strong>+ Person</strong> oder <strong>+ Ereignis</strong> erstellst du Karten. Bilder werden direkt im Projekt gespeichert.</p></div>
+      </section>
+      <section>
+        <span class="help-number">02</span>
+        <div><h3>Ordnen und gestalten</h3><p>Verbinde Elternteile mit Kindern oder lass alle Karten automatisch anordnen. Über <strong>Farbe</strong> färbst du Karten und Verbindungslinien frei ein.</p></div>
+      </section>
+      <section>
+        <span class="help-number">03</span>
+        <div><h3>Bewegen und zoomen</h3><p>Ziehe die freie Fläche oder halte die Leertaste gedrückt. Zoome mit dem Mausrad, den Tasten rechts oben oder passe alles mit dem Rahmensymbol ein.</p></div>
+      </section>
+      <section>
+        <span class="help-number">04</span>
+        <div><h3>Sichern und teilen</h3><p>Änderungen landen automatisch nur in diesem Browser. Exportiere zusätzlich JSON als Sicherung sowie PNG oder SVG für Veröffentlichung und Druck.</p></div>
+      </section>
+      <div class="shortcut-grid">
+        <span><kbd>⌘/Strg</kbd> + <kbd>Z</kbd></span><span>Rückgängig</span>
+        <span><kbd>Entf</kbd></span><span>Ausgewählte Karte löschen</span>
+        <span><kbd>Esc</kbd></span><span>Auswahl oder Dialog schließen</span>
+        <span><kbd>0</kbd></span><span>Alles einpassen</span>
+      </div>
+      <p class="privacy-note"><strong>Privat und ohne Server:</strong> Diese Website sendet keine Daten. Alles bleibt in deinem Browser, bis du es exportierst.</p>
+    </div>
+  </dialog>
+
+  <dialog class="confirm-dialog" id="confirmDialog">
+    <form method="dialog">
+      <div class="confirm-symbol">!</div>
+      <h2 id="confirmTitle">Wirklich löschen?</h2>
+      <p id="confirmText">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+      <div class="confirm-actions">
+        <button class="secondary-button" id="confirmCancel" value="cancel">Abbrechen</button>
+        <button class="danger-button" id="confirmAccept" value="confirm">Löschen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <input class="visually-hidden" id="jsonFileInput" type="file" accept="application/json,.json">
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
